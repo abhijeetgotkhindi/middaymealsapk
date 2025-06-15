@@ -91,6 +91,7 @@ export default function IntentScreen() {
   const handleModalClose = () => {
     setModalVisible(false);
     setFabOpen(false);
+    //
   };
 
   const handleSubmit = (status) => {
