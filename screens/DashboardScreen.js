@@ -20,14 +20,29 @@ import { useFocusEffect } from '@react-navigation/native';
 import { DatePickerModal, registerTranslation } from 'react-native-paper-dates';
 import en from 'date-fns/locale/en-US'
 import { format } from 'date-fns';
-import MultiSelect from 'react-native-multiple-select';
-import Icon from 'react-native-vector-icons/FontAwesome'; // or Ionicons, MaterialIcons, etc.
+import { MultiSelect } from 'react-native-element-dropdown';
 import { Dimensions } from 'react-native';
 const { width } = Dimensions.get('window');
+import Icon from 'react-native-vector-icons/FontAwesome'; // or Ionicons, MaterialIcons, etc.
 
 export default function DashboardScreen() {
-    registerTranslation('en', en);
-    const { user } = useContext(AuthContext);
+    registerTranslation('en', {
+        save: 'Save',
+        selectSingle: 'Select date',
+        selectMultiple: 'Select dates',
+        selectRange: 'Select period',
+        notAccordingToDateFormat: (inputFormat) => `Date format should be`,// ${inputFormat}
+        mustBeHigherThan: (date) => `Must be later than `,//${date}
+        mustBeLowerThan: (date) => `Must be earlier than`,// ${date}
+        mustBeBetween: (startDate, endDate) => `Must be between `,//${startDate} - ${endDate}
+        dateIsDisabled: 'Date is not allowed',
+        previous: 'Previous',
+        next: 'Next',
+        typeInDate: 'Type in date',
+        pickDateFromCalendar: 'Pick date from calendar',
+        close: 'Close',
+    });
+    const { user, logout } = useContext(AuthContext);
     const { request } = useApi();
     const [dashboardvalues, setDashboardValues] = useState([]);
     const [school, setschool] = useState([]);
@@ -71,7 +86,9 @@ export default function DashboardScreen() {
                 setDashboardValues(result.dashboardValues[0]);
             }
         } catch (error) {
-            console.error('Dashboard error:', error.response?.data || error.message);
+            if (!error.status)
+                logout();
+            // console.error('Dashboard error:', error.response?.data || error.message);
         }
     }, [user]);
 
@@ -91,7 +108,9 @@ export default function DashboardScreen() {
                 setschool(filteredData);
             }
         } catch (error) {
-            console.error('School error:', error.response?.data || error.message);
+            if (!error.status)
+                logout();
+            // console.error('School error:', error.response?.data || error.message);
         }
     }, [user.school]);
 
@@ -100,94 +119,90 @@ export default function DashboardScreen() {
             if (user?.school && user?.ngocode) {
                 getSchool();
                 getDashboard();
+                setSelectedSchool([]);
             }
         }, [getSchool, getDashboard])
     );
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-            <Header />
-            <View style={styles.searchSection}>
-                <View style={styles.innerBody}>
-                    <View style={styles.headerContainer}>
-                        <Text style={styles.findNearbyTitle}>Dashboard</Text>
-                        <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.iconButton}>
-                            <Icon name="filter" size={30} color="#4F8EF7" />
-                        </TouchableOpacity>
-                    </View>
-                    <View style={styles.filterBar}>
-                        <Modal visible={modalVisible} animationType="slide" transparent={true}>
-                            <View style={styles.modalOverlay}>
-                                <View style={styles.modalContent}>
-                                    {/* Header */}
-                                    <View style={styles.modalHeader}>
-                                        <Text style={styles.modalTitle}>Filter Dashboard</Text>
-                                        <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
-                                            <Text style={styles.closeButtonText}>×</Text>
-                                        </TouchableOpacity>
-                                    </View>
-
-                                    {/* Body */}
-                                    <View style={styles.modalBody}>
-                                        <MultiSelect
-                                            items={school}
-                                            uniqueKey="oid"
-                                            onSelectedItemsChange={setSelectedSchool}
-                                            selectedItems={selectedSchool}
-                                            selectText="Select School(s)..."
-                                            searchInputPlaceholderText="Search School(s)..."
-                                            tagRemoveIconColor="#CCC"
-                                            tagBorderColor="#CCC"
-                                            tagTextColor="#333"
-                                            selectedItemTextColor="#007BFF"
-                                            selectedItemIconColor="#007BFF"
-                                            itemTextColor="#000"
-                                            searchInputStyle={{ color: '#000' }}
-                                            styleMainWrapper={{ marginBottom: 15 }}
-                                        />
-
-                                        <View style={styles.datePickerRow}>
-                                            <NButton
-                                                icon="calendar"
-                                                mode="outlined"
-                                                onPress={() => setOpen(true)}
-                                                style={{ flex: 1, marginRight: 10 }}
-                                                contentStyle={{ flexDirection: 'row-reverse' }}
-                                                labelStyle={{ fontSize: 14 }}
-                                            >
-                                                Select Date Range
-                                            </NButton>
-                                            <NText style={styles.dateRangeText}>
-                                                {range.startDate ? format(range.startDate, 'dd-MM-yyyy') : 'Start'} - {range.endDate ? format(range.endDate, 'dd-MM-yyyy') : 'End'}
-                                            </NText>
-                                        </View>
-
-                                        <DatePickerModal
-                                            locale="en"
-                                            mode="range"
-                                            visible={open}
-                                            onDismiss={() => setOpen(false)}
-                                            startDate={range.startDate}
-                                            endDate={range.endDate}
-                                            onConfirm={({ startDate, endDate }) => {
-                                                setOpen(false);
-                                                setRange({ startDate, endDate });
-                                            }}
-                                        />
-                                    </View>
-
-                                    {/* Footer */}
-                                    <View style={styles.modalFooter}>
-                                        <Button title="Apply Filters" onPress={() => {
-                                            setModalVisible(false);
-                                            alert('Filters Applied');
-                                        }} />
-                                    </View>
-
-                                </View>
+            <Header pageTitle="Dashboard" />
+            <View style={styles.headerContainer}>
+                <TouchableOpacity onPress={() => (setSelectedSchool([]), setModalVisible(true))} style={styles.iconButton}>
+                    <Icon name="calendar" size={30} color="#4F8EF7" />
+                    <Text style={{ paddingHorizontal: 14, paddingVertical: 8 }}>{(format(range.startDate, 'dd-MMM-yyyy'))} To {(format(range.endDate, 'dd-MMM-yyyy'))}</Text>
+                </TouchableOpacity>
+            </View>
+            <View style={styles.filterBar}>
+                <Modal visible={modalVisible} animationType="slide" transparent={true}>
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modalContent}>
+                            {/* Header */}
+                            <View style={styles.modalHeader}>
+                                <Text style={styles.modalTitle}>Filter Dashboard</Text>
+                                <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
+                                    <Text style={styles.closeButtonText}>×</Text>
+                                </TouchableOpacity>
                             </View>
-                        </Modal>
+
+                            {/* Body */}
+                            <View style={styles.modalBody}>
+                                <MultiSelect
+                                    style={styles.dropdown}
+                                    placeholderStyle={styles.placeholderStyle}
+                                    selectedTextStyle={styles.selectedTextStyle}
+                                    inputSearchStyle={styles.inputSearchStyle}
+                                    iconStyle={styles.iconStyle}
+                                    data={school}
+                                    labelField="name"
+                                    valueField="oid"
+                                    key="oid"
+                                    placeholder="Select School(s)"
+                                    search
+                                    value={selectedSchool}
+                                    onChange={item => setSelectedSchool(item)}
+                                    selectedStyle={styles.selectedStyle}
+                                />
+                                <View style={styles.datePickerRow}>
+                                    <NButton
+                                        icon="calendar"
+                                        mode="outlined"
+                                        onPress={() => setOpen(true)}
+                                        style={{ flex: 1, marginRight: 10 }}
+                                        contentStyle={{ flexDirection: 'row-reverse' }}
+                                        labelStyle={{ fontSize: 14 }}
+                                    >
+                                        Select Date Range
+                                    </NButton>
+                                    <NText style={styles.dateRangeText}>
+                                        {range.startDate ? format(range.startDate, 'dd-MMM-yyyy') : 'Start'} - {range.endDate ? format(range.endDate, 'dd-MMM-yyyy') : 'End'}
+                                    </NText>
+                                </View>
+
+                                <DatePickerModal
+                                    locale="en"
+                                    mode="range"
+                                    visible={open}
+                                    onDismiss={() => setOpen(false)}
+                                    startDate={range.startDate}
+                                    endDate={range.endDate}
+                                    onConfirm={({ startDate, endDate }) => {
+                                        setOpen(false);
+                                        setRange({ startDate, endDate });
+                                    }}
+                                />
+                            </View>
+
+                            {/* Footer */}
+                            <View style={styles.modalFooter}>
+                                <Button title="Apply Filters" onPress={() => {
+                                    setModalVisible(false);
+                                    alert('Filters Applied');
+                                }} />
+                            </View>
+
+                        </View>
                     </View>
-                </View>
+                </Modal>
             </View>
             <View style={styles.container}>
                 <View style={{ width: width * 0.3 }}>
@@ -367,21 +382,23 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     headerContainer: {
-        flexDirection: 'row',      // side-by-side
-        alignItems: 'center',      // vertically centered
-        justifyContent: 'space-between', // space between text & button
-        paddingHorizontal: 15,
-        paddingVertical: 10,
-        paddingBottom: 4
+        flexDirection: 'row',
+        justifyContent: 'center', // Aligns children to the right
+        paddingHorizontal: 16,
+        borderWidth: 1,
+        borderRadius: 50,
+        marginVertical: 15,
+        margin: width * 0.1
+        // width: width * 0.5,
+        // left: 100
     },
     container: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'center',
-        marginTop: 10
     },
     table: {
-        padding: 20,
+        padding: 10,
         borderColor: '#ccc',
     },
     cell: {
@@ -395,7 +412,7 @@ const styles = StyleSheet.create({
         paddingTop: 20,
     },
     findNearbyTitle: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: '700',
         color: '#000',
         marginBottom: '3%',
@@ -412,5 +429,38 @@ const styles = StyleSheet.create({
     },
     button: {
         width: 80
-    }
+    },
+    iconButton: {
+        flexDirection: 'row',
+        padding: 8,
+
+    },
+    dropdown: {
+        height: 50,
+        borderColor: 'gray',
+        borderWidth: 0.5,
+        borderRadius: 8,
+        paddingHorizontal: 8,
+        marginBottom: 10,
+    },
+    placeholderStyle: {
+        fontSize: 16,
+        color: '#999',
+    },
+    selectedTextStyle: {
+        fontSize: 14,
+        color: '#000',
+    },
+    iconStyle: {
+        width: 20,
+        height: 20,
+    },
+    inputSearchStyle: {
+        height: 40,
+        fontSize: 16,
+    },
+    selectedStyle: {
+        borderRadius: 12,
+    },
+
 });

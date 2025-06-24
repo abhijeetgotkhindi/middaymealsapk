@@ -20,16 +20,16 @@ function BottomTabs() {
         tabBarIcon: ({ color, size }) => {
           const icons = {
             Dashboard: 'view-dashboard',
-            IntentScreen: 'account',
-            ProfileScreen: 'cog',
+            Intent: 'account',
+            Profile: 'cog',
           };
           return <Icon source={icons[route.name]} color={color} size={size} />;
         },
       })}
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
-      <Tab.Screen name="IntentScreen" component={IntentScreen} />
-      <Tab.Screen name="ProfileScreen" component={ProfileScreen} />
+      <Tab.Screen name="Intent" component={IntentScreen} />
+      <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
 }
@@ -42,7 +42,7 @@ export default function AppNavigator() {
       <FullScreenLoader />
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {user ? (
-          <Stack.Screen name="Main" component={BottomTabs} />
+          <Stack.Screen name="Home" component={BottomTabs} />
         ) : (
           <Stack.Screen name="Login" component={LoginScreen} />
         )}

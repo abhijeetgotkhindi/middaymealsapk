@@ -7,6 +7,7 @@ import { Platform } from 'react-native';
 // 1. Axios base config
 const apiClient = axios.create({
   baseURL: 'https://middaymealsuat.wetrunk.in/api', // ✅ Replace with your API base URL
+  // baseURL: 'http://192.168.1.100:3000/api', // ✅ Replace with your API base URL
   // timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -35,8 +36,8 @@ const useApi = () => {
 
       return response.data;
     } catch (error) {
-     // console.error(error);
-      //throw error?.response?.data || { message: 'Something went wrong' };
+      console.error(error);
+      throw error?.response?.data || { message: 'Something went wrong' };
     } finally {
       setLoading(false);
     }
