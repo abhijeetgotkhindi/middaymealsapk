@@ -92,7 +92,7 @@ export default function IntentScreen() {
         })));
       }
     } catch (err) {
-      console.error('School error:', err.message);
+      // console.error('School error:', err.message);
     }
   }, [user.school]);
 
@@ -166,15 +166,6 @@ export default function IntentScreen() {
     setSelectAll(!selectAll);
   };
 
-  const getStatusStyle = (status) => {
-    switch (status) {
-      case 'Created': return { color: '#2196F3' };
-      case 'Delivered': return { color: '#FF9800' };
-      case 'Received': return { color: '#4CAF50' };
-      default: return { color: '#757575' };
-    }
-  };
-
   const openEditModal = (item, viewOnly = false) => {
     setFormData({
       oid: item.oid?.toString() || '0',
@@ -194,8 +185,15 @@ export default function IntentScreen() {
     setIsViewMode(viewOnly); // <- Freeze form
     setModalVisible(true);
   };
+
+  const getStatusColor = (status) => {
+    return status === 'Created' ? '#2196F3' :
+      status === 'Delivered' ? '#FF9800' :
+        status === 'Received' ? '#4CAF50' : '#BDBDBD';
+  };
+
   const renderItem = ({ item }) => (
-    <Card key={item.oid} style={styles.card} mode="outlined">
+    <Card style={[styles.card, { borderLeftColor: getStatusColor(item.istatus), borderLeftWidth: 5 }]}>
       <View style={styles.cardContent}>
         {(tab === 'Created' && user.usergroup === 2) || (tab === 'Delivered' && user.usergroup === 3) ? (
           <Checkbox
@@ -203,36 +201,15 @@ export default function IntentScreen() {
             onPress={() => toggleItem(item.oid)}
           />
         ) : null}
-        {/* onPress={() => openEditModal(item, true)} */}
         <TouchableOpacity style={{ flex: 1 }}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.itemTitle}>{item.schoolname}</Text>
-            <Text style={styles.itemSubtitle}>
-              <MaterialCommunityIcons name="calendar" size={14} /> {item.intentfor}
-            </Text>
-            <Text style={[styles.statusText, getStatusStyle(item.istatus)]}>
-              <MaterialCommunityIcons name="information" size={14} /> Status: {item.istatus}
-            </Text>
-          </View>
+          <Text style={styles.itemTitle}>{item.schoolname}</Text>
+          <Text style={styles.itemSubtitle}><MaterialCommunityIcons name="calendar" size={14} /> {item.intentfor}</Text>
+          <Text style={[styles.statusText, { color: getStatusColor(item.istatus) }]}><MaterialCommunityIcons name="information" size={14} /> Status: {item.istatus}</Text>
         </TouchableOpacity>
         {(tab === 'Created' && user.usergroup === 2) || (tab === 'Created' && user.usergroup === 3) ? (
-          <>
-            <IconButton
-              icon="pencil"
-              size={20}
-              onPress={() => openEditModal(item)}
-            />
-            <IconButton
-              icon="eye"
-              size={20}
-              onPress={() => openEditModal(item, true)}
-            />
-          </>
-        ) : <IconButton
-          icon="eye"
-          size={20}
-          onPress={() => openEditModal(item, true)}
-        />}
+          <IconButton icon="pencil" size={20} onPress={() => openEditModal(item)} />
+        ) : null}
+        <IconButton icon="eye" size={20} onPress={() => openEditModal(item, true)} />
       </View>
     </Card>
   );
@@ -289,11 +266,11 @@ export default function IntentScreen() {
   const handleSubmit = async (status) => {
     if (!validateFormData()) return;
     const payload = { ...formData, intentfor: format(formData.intentfor, 'yyyy-MM-dd'), school: selectedSchool, istatus: status, createdby: user.oid };
-// alert(`/intent/${user.ngocode}/`+(formData.oid == 0 ? 'addnew' : 'update'));
+    // alert(`/intent/${user.ngocode}/`+(formData.oid == 0 ? 'addnew' : 'update'));
     try {
       await request({
         method: (formData.oid == 0 ? 'POST' : 'PUT'),
-        url: `/intent/${user.ngocode}/`+(formData.oid == 0 ? 'addnew' : 'update'),
+        url: `/intent/${user.ngocode}/` + (formData.oid == 0 ? 'addnew' : 'update'),
         body: payload
       });
       setSnackbar({ visible: true, msg: 'Intent Added successfully' });
@@ -354,72 +331,78 @@ export default function IntentScreen() {
               keyboardVerticalOffset={80} // Adjust as needed
             >
               <ScrollView contentContainerStyle={{ paddingBottom: 100 * 0.5 }}>
-                <IconButton
-                  icon="close"
-                  size={24}
-                  onPress={handleModalClose}
-                  style={{ position: 'absolute', top: -12, right: -12, zIndex: 1 }}
-                />
-                <Text style={styles.modalTitle}>Add/Edit Intent(s)</Text>
-                {isViewMode ? (
-                  <TextInput
-                    key='Intent For'
-                    label='Intent For'
-                    value={format(formData.intentfor, 'dd-MM-yyyy')}
-                    style={[styles.input, { marginBottom: 0 }]}
-                    mode="outlined"
-                    editable={!isViewMode} // 🔒 Freeze if true
-                  />
-                ) : (
-                  <Button mode="outlined" onPress={() => setShowDatePicker(true)}>
-                    {format(formData.intentfor, 'dd-MM-yyyy')}
-                  </Button>
-                )}
-                {showDatePicker && (
-                  <DatePickerModal
-                    locale="en"
-                    mode="single"
-                    visible
-                    date={formData.intentfor}
-                    onDismiss={() => setShowDatePicker(false)}
-                    onConfirm={({ date }) => {
-                      const correctedDate = set(date, { hours: 0, minutes: 0, seconds: 0, milliseconds: 0 }); // Avoids time zone cutoff
-                      checkDate(date);
-                    }}
-                    editable={!isViewMode} // 🔒 Freeze if true
-                  />
-                )}
-                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-                  <Dropdown
-                    data={school}
-                    labelField="name"
-                    valueField="oid"
-                    placeholder="Select School"
-                    value={selectedSchool}
-                    onChange={item => {
-                      if (!isViewMode) {
-                        setSelectedSchool(item.oid);
-                        handleChange('school', item.oid);
-                      }
-                    }}
-                    style={[styles.dropdown, isViewMode && { backgroundColor: '#f0f0f0' }]}
-                    disable={isViewMode}
-                  />
-                </KeyboardAvoidingView>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>
+                    {isViewMode ? 'View' : formData.oid === '0' ? 'Add' : 'Edit'} Intent
+                  </Text>
+                  <IconButton icon="close" size={22} onPress={handleModalClose} style={styles.modalCloseButton} />
+                </View>
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Basic Information</Text>
+                  {isViewMode ? (
+                    <TextInput
+                      key='Intent For'
+                      label='Intent For'
+                      value={format(formData.intentfor, 'dd-MM-yyyy')}
+                      style={[styles.input, { marginBottom: 0 }]}
+                      mode="outlined"
+                      editable={!isViewMode} // 🔒 Freeze if true
+                    />
+                  ) : (
+                    <Button mode="outlined" onPress={() => setShowDatePicker(true)}>
+                      {format(formData.intentfor, 'dd-MM-yyyy')}
+                    </Button>
+                  )}
+                  {showDatePicker && (
+                    <DatePickerModal
+                      locale="en"
+                      mode="single"
+                      visible
+                      date={formData.intentfor}
+                      onDismiss={() => setShowDatePicker(false)}
+                      onConfirm={({ date }) => {
+                        const correctedDate = set(date, { hours: 0, minutes: 0, seconds: 0, milliseconds: 0 }); // Avoids time zone cutoff
+                        checkDate(date);
+                      }}
+                      editable={!isViewMode} // 🔒 Freeze if true
+                    />
+                  )}
+                  <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+                    <Dropdown
+                      data={school}
+                      labelField="name"
+                      valueField="oid"
+                      placeholder="Select School"
+                      value={selectedSchool}
+                      onChange={item => {
+                        if (!isViewMode) {
+                          setSelectedSchool(item.oid);
+                          handleChange('school', item.oid);
+                        }
+                      }}
+                      style={[styles.dropdown, isViewMode && { backgroundColor: '#f0f0f0' }]}
+                      disable={isViewMode}
+                    />
+                  </KeyboardAvoidingView>
+                </View>
 
-                {['totalpresent', 'milk', 'rice', 'sambar', 'egg', 'shengachikki', 'banana'].map(field => (
-                  <TextInput
-                    key={field}
-                    label={field}
-                    value={formData[field]}
-                    onChangeText={text => handleChange(field, text)}
-                    keyboardType="numeric"
-                    style={styles.input}
-                    mode="outlined"
-                    editable={!isViewMode} // 🔒 Freeze if true
-                  />
-                ))}
-                <TextInput label="Total" value={formData.total} mode="outlined" style={styles.input} editable={false} />
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Meal Details</Text>
+                  {['totalpresent', 'milk', 'rice', 'sambar', 'egg', 'shengachikki', 'banana'].map(field => (
+                    <TextInput
+                      key={field}
+                      label={field}
+                      value={formData[field]}
+                      onChangeText={text => handleChange(field, text)}
+                      keyboardType="numeric"
+                      style={styles.input}
+                      mode="outlined"
+                      editable={!isViewMode} // 🔒 Freeze if true
+                    />
+                  ))}
+                  <TextInput label="Total" value={formData.total} mode="outlined" style={styles.input} editable={false} />
+                </View>
+
                 {!isViewMode && (
                   <View style={styles.buttonRow}>
                     <Button onPress={handleModalClose}>Close</Button>
@@ -505,6 +488,35 @@ export default function IntentScreen() {
 }
 
 const styles = StyleSheet.create({
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+
+  modalCloseButton: {
+    margin: 0,
+  },
+
+  scrollContent: {
+    paddingBottom: 20,
+  },
+  section: {
+    backgroundColor: '#f9f9f9',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 10,
+    color: '#333',
+  },
   modalContainer: {
     backgroundColor: 'white',
     padding: 20,
@@ -535,9 +547,11 @@ const styles = StyleSheet.create({
 
   tabButton: {
     flex: 1,
-    marginHorizontal: 5,
-    minHeight: 40,
-    paddingHorizontal: 4,
+    marginHorizontal: 4,
+    minHeight: 42,
+    borderRadius: 50,
+    borderWidth: 1,
+    borderColor: '#ccc',
   },
 
   tabLabel: {
@@ -573,27 +587,34 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
   },
   card: {
-    marginHorizontal: 10,
-    marginVertical: 5,
-    borderRadius: 8,
+    marginHorizontal: 12,
+    marginVertical: 6,
+    borderRadius: 12,
+    backgroundColor: '#f9f9f9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   cardContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 10,
+    justifyContent: 'space-between',
+    padding: 14,
   },
   itemTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 4,
+    color: '#333',
   },
   itemSubtitle: {
-    fontSize: 14,
-    color: '#555',
+    fontSize: 13,
+    color: '#777',
   },
   statusText: {
-    marginTop: 2,
+    marginTop: 4,
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: 'bold',
   },
 });

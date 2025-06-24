@@ -52,8 +52,10 @@ export default function DashboardScreen() {
 
     // Get date 30 days ago
     const pastDate = new Date();
+    //   console.log(pastDate+'  start')
     pastDate.setDate(today.getDate() - 30);
-    const [range, setRange] = useState({ startDate: today, endDate: pastDate });
+    // console.log(pastDate)
+    const [range, setRange] = useState({ startDate: pastDate, endDate: today });
     const [open, setOpen] = useState(false);
 
     const formatDate = (dateStr) => {
@@ -67,16 +69,19 @@ export default function DashboardScreen() {
         }
         return dateObj.toISOString().split('T')[0];
     };
+
+    const handleFilter = async () => {
+        await getDashboard();
+    }
     const getDashboard = useCallback(async () => {
         try {
             const data = {
                 ngocode: user.ngocode,
-                startdate: Platform.OS === 'ios' ? formatDate('12-05-2025') : '12-05-2025',
-                enddate: Platform.OS === 'ios' ? formatDate('10-06-2025') : '10-06-2025',
+                startdate: format(range.startDate, 'dd-MM-yyyy'),//10-06-2025
+                enddate: format(range.endDate, 'dd-MM-yyyy'),
                 ngo: user.ngo,
-                school: user.school,
+                school: selectedSchool.length > 0 ? selectedSchool : user.school,
             };
-
             const result = await request({
                 method: 'POST',
                 url: '/dashboard/',  // Automatically added to baseURL
@@ -90,7 +95,7 @@ export default function DashboardScreen() {
                 logout();
             // console.error('Dashboard error:', error.response?.data || error.message);
         }
-    }, [user]);
+    }, [user, range, selectedSchool]);
 
     const getSchool = useCallback(async () => {
         try {
@@ -119,17 +124,32 @@ export default function DashboardScreen() {
             if (user?.school && user?.ngocode) {
                 getSchool();
                 getDashboard();
-                setSelectedSchool([]);
+                // setSelectedSchool([]);
             }
         }, [getSchool, getDashboard])
     );
+
+    const labelIconMap = {
+        'No Of Meals': 'cutlery',
+        'Rice': 'spoon',
+        'Sambar': 'tint',
+        'Milk': 'glass',
+        'Egg': 'egg',
+        'Chikki': 'birthday-cake',
+        'Banana': 'leaf',
+        'Total': 'calculator',
+        'Delivered': 'truck',
+        'Received': 'check-circle',
+    };
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
             <Header pageTitle="Dashboard" />
             <View style={styles.headerContainer}>
-                <TouchableOpacity onPress={() => (setSelectedSchool([]), setModalVisible(true))} style={styles.iconButton}>
-                    <Icon name="calendar" size={30} color="#4F8EF7" />
-                    <Text style={{ paddingHorizontal: 14, paddingVertical: 8 }}>{(format(range.startDate, 'dd-MMM-yyyy'))} To {(format(range.endDate, 'dd-MMM-yyyy'))}</Text>
+                <TouchableOpacity onPress={() => (setSelectedSchool([]), setModalVisible(true))} style={styles.filterChip}>
+                    <Icon name="calendar" size={18} color="#4F8EF7" style={{ marginRight: 8 }} />
+                    <Text style={styles.chipText}>
+                        {format(range.startDate, 'dd-MMM-yyyy')} to {format(range.endDate, 'dd-MMM-yyyy')}
+                    </Text>
                 </TouchableOpacity>
             </View>
             <View style={styles.filterBar}>
@@ -196,7 +216,7 @@ export default function DashboardScreen() {
                             <View style={styles.modalFooter}>
                                 <Button title="Apply Filters" onPress={() => {
                                     setModalVisible(false);
-                                    alert('Filters Applied');
+                                    handleFilter();
                                 }} />
                             </View>
 
@@ -205,99 +225,61 @@ export default function DashboardScreen() {
                 </Modal>
             </View>
             <View style={styles.container}>
-                <View style={{ width: width * 0.3 }}>
-                    <DashboardLabel
-                        icon="shopping-cart"
-                        label="Created"
-                        value={dashboardvalues.created}
-                        color="#17a2b8"
-                    />
-                </View>
-
-                <View style={{ width: width * 0.3 }}>
-                    <DashboardLabel
-                        icon="bars"
-                        label="Delivered"
-                        value={dashboardvalues.delivered}
-                        color="#28a745"
-                    />
-                </View>
-
-                <View style={{ width: width * 0.3 }}>
-                    <DashboardLabel
-                        icon="user-plus"
-                        label="Received"
-                        value={dashboardvalues.received}
-                        color="#f39c12"
-                    />
-                </View>
+                {[
+                    { icon: 'plus', label: 'Created', value: dashboardvalues.created, color: '#17a2b8' },
+                    { icon: 'truck', label: 'Delivered', value: dashboardvalues.delivered, color: '#28a745' },
+                    { icon: 'check', label: 'Received', value: dashboardvalues.received, color: '#f39c12' },
+                ].map(item => (
+                    <View key={item.label} style={styles.dashboardBox}>
+                        <DashboardLabel {...item} />
+                    </View>
+                ))}
             </View>
             <View style={styles.hr} />
 
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={80} style={{ flex: 1 }}>
+            <KeyboardAvoidingView keyboardVerticalOffset={80} style={{ flex: 1 }}>
                 <ScrollView vertical showsverticalScrollIndicator={true}>
-                    <Card style={{ backgroundColor: "#fff" }}>
-                        <DataTable style={styles.table}>
-                            <DataTable.Row>
-                                <DataTable.Cell style={styles.cell}>No Of Meals</DataTable.Cell>
-                                <DataTable.Cell numeric style={styles.cell}>
-                                    {dashboardvalues.nofomeals}
-                                </DataTable.Cell>
-                            </DataTable.Row>
-                            <DataTable.Row>
-                                <DataTable.Cell style={styles.cell}>Rice</DataTable.Cell>
-                                <DataTable.Cell numeric style={styles.cell}>
-                                    {dashboardvalues.rice}
-                                </DataTable.Cell>
-                            </DataTable.Row>
-                            <DataTable.Row>
-                                <DataTable.Cell style={styles.cell}>Sambar</DataTable.Cell>
-                                <DataTable.Cell numeric style={styles.cell}>
-                                    {dashboardvalues.sambar}
-                                </DataTable.Cell>
-                            </DataTable.Row>
-                            <DataTable.Row>
-                                <DataTable.Cell style={styles.cell}>Milk</DataTable.Cell>
-                                <DataTable.Cell numeric style={styles.cell}>
-                                    {dashboardvalues.milk}
-                                </DataTable.Cell>
-                            </DataTable.Row>
-                            <DataTable.Row>
-                                <DataTable.Cell style={styles.cell}>Egg</DataTable.Cell>
-                                <DataTable.Cell numeric style={styles.cell}>
-                                    {dashboardvalues.egg}
-                                </DataTable.Cell>
-                            </DataTable.Row>
-                            <DataTable.Row>
-                                <DataTable.Cell style={styles.cell}>Chikki</DataTable.Cell>
-                                <DataTable.Cell numeric style={styles.cell}>
-                                    {dashboardvalues.shengachikki}
-                                </DataTable.Cell>
-                            </DataTable.Row>
-                            <DataTable.Row>
-                                <DataTable.Cell style={styles.cell}>Banana</DataTable.Cell>
-                                <DataTable.Cell numeric style={styles.cell}>
-                                    {dashboardvalues.banana}
-                                </DataTable.Cell>
-                            </DataTable.Row>
-                            <DataTable.Row>
-                                <DataTable.Cell style={styles.cell}>Total</DataTable.Cell>
-                                <DataTable.Cell numeric style={styles.cell}>
-                                    {dashboardvalues.total}
-                                </DataTable.Cell>
-                            </DataTable.Row>
-                            <DataTable.Row>
-                                <DataTable.Cell style={styles.cell}>Delivered</DataTable.Cell>
-                                <DataTable.Cell numeric style={styles.cell}>
-                                    {dashboardvalues.delivered}
-                                </DataTable.Cell>
-                            </DataTable.Row>
-                            <DataTable.Row>
-                                <DataTable.Cell style={styles.cell}>Received</DataTable.Cell>
-                                <DataTable.Cell numeric style={styles.cell}>
-                                    {dashboardvalues.received}
-                                </DataTable.Cell>
-                            </DataTable.Row>
+                    <Card style={{ backgroundColor: "#fff", margin: 10, borderRadius: 12, elevation: 3 }}>
+                        <DataTable>
+                            {/* Table Header */}
+                            <DataTable.Header style={styles.tableHeader}>
+                                <DataTable.Title textStyle={styles.tableHeaderText}>Item</DataTable.Title>
+                                <DataTable.Title numeric textStyle={styles.tableHeaderText}>Quantity</DataTable.Title>
+                            </DataTable.Header>
+                            {[
+                                { label: 'No Of Meals', value: dashboardvalues.nofomeals },
+                                { label: 'Rice', value: dashboardvalues.rice },
+                                { label: 'Sambar', value: dashboardvalues.sambar },
+                                { label: 'Milk', value: dashboardvalues.milk },
+                                { label: 'Egg', value: dashboardvalues.egg },
+                                { label: 'Chikki', value: dashboardvalues.shengachikki },
+                                { label: 'Banana', value: dashboardvalues.banana },
+                                { label: 'Total', value: dashboardvalues.total, highlight: true },
+                                { label: 'Delivered', value: dashboardvalues.delivered },
+                                { label: 'Received', value: dashboardvalues.received },
+                            ].map((item, index) => (
+                                <DataTable.Row
+                                    key={item.label}
+                                    style={[
+                                        styles.tableRow,
+                                        index % 2 === 0 ? styles.rowEven : styles.rowOdd,
+                                        item.highlight && styles.totalRow,
+                                    ]}
+                                >
+                                    <DataTable.Cell style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        {/* <Icon
+                                            name={labelIconMap[item.label] || 'circle'} // fallback icon
+                                            size={14}
+                                            color="#555"
+                                            style={{ marginRight: 8 }}
+                                        /> */}
+                                        <Text> {item.label}</Text>
+                                    </DataTable.Cell>
+                                    <DataTable.Cell numeric >
+                                        <Text style={item.highlight ? styles.totalText : null}>{item.value}</Text>
+                                    </DataTable.Cell>
+                                </DataTable.Row>
+                            ))}
                         </DataTable>
                     </Card>
                 </ScrollView>
@@ -307,6 +289,60 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
+    dashboardBox: {
+        width: width * 0.28,
+        margin: 8,
+        borderRadius: 12,
+        backgroundColor: '#fff',
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+    },
+    filterChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#e3f2fd',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 24,
+        borderWidth: 1,
+        borderColor: '#90caf9',
+    },
+    chipText: {
+        fontSize: 14,
+        color: '#1565c0',
+        fontWeight: '500',
+    },
+    tableHeader: {
+        backgroundColor: '#4F8EF7',
+        borderTopLeftRadius: 12,
+        borderTopRightRadius: 12,
+    },
+    tableHeaderText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
+    tableRow: {
+        borderBottomWidth: 1,
+        borderBottomColor: '#ddd',
+    },
+    rowEven: {
+        backgroundColor: '#f9f9f9',
+    },
+    rowOdd: {
+        backgroundColor: '#fff',
+    },
+    totalRow: {
+        backgroundColor: '#e0f7fa',
+    },
+    totalText: {
+        fontWeight: 'bold',
+        color: '#00796b',
+        fontSize: 15,
+    },
     hr: {
         borderBottomColor: '#bbb',  // line color
         borderBottomWidth: StyleSheet.hairlineWidth, // thin line
@@ -340,12 +376,15 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 15,
+        marginBottom: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#ddd',
+        paddingBottom: 10,
     },
     modalTitle: {
-        fontSize: 20,
-        fontWeight: '700',
-        color: '#222',
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#333',
     },
     closeButton: {
         padding: 4,
@@ -385,11 +424,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'center', // Aligns children to the right
         paddingHorizontal: 16,
-        borderWidth: 1,
+        // borderWidth: 1,
         borderRadius: 50,
         marginVertical: 15,
-        margin: width * 0.1
-        // width: width * 0.5,
+        margin: width * 0.1,
+        // width: width * 1,
         // left: 100
     },
     container: {
@@ -400,12 +439,6 @@ const styles = StyleSheet.create({
     table: {
         padding: 10,
         borderColor: '#ccc',
-    },
-    cell: {
-        borderWidth: 1,
-        borderColor: '#ccc',
-        paddingVertical: 8,
-        justifyContent: 'center',
     },
     searchSection: {
         paddingHorizontal: 16,

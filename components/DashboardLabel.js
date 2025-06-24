@@ -1,25 +1,19 @@
-// components/DashboardLabel.js
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
-// const { width, height } = Dimensions.get('window');
-
-// export const wp = percentage => (width * percentage) / 100;  // width percent
-// export const hp = percentage => (height * percentage) / 100; // height percent
-import { Dimensions } from 'react-native';
 const { width } = Dimensions.get('window');
-const getPadding = () => {
-  return width > 400 ? 12 : 10;
-};
+
+const getPadding = () => (width > 400 ? 14 : 12);
+
 const DashboardLabel = ({ icon, label, value, color }) => {
   return (
-    <View style={[styles.card, { backgroundColor: color, margin: '5%' }]}>
-      <View style={styles.textContainer}>
-        <View style={styles.iconContainer}>
-          <Icon name={icon} size={30} color="#fff" />
-        </View>
-        <Text style={styles.value}>{value}</Text>
+    <View style={[styles.card, { backgroundColor: color || '#4F8EF7' }]}>
+      <View style={styles.iconWrapper}>
+        <Icon name={icon} size={26} color="#fff" />
+      </View>
+      <View style={styles.textWrapper}>
+        <Text style={styles.value}>{value ?? 0}</Text>
         <Text style={styles.label}>{label}</Text>
       </View>
     </View>
@@ -28,29 +22,33 @@ const DashboardLabel = ({ icon, label, value, color }) => {
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: 'row',
+    width: width * 0.25,
+    borderRadius: 16,
     padding: getPadding(),
     alignItems: 'center',
-    // marginVertical: 5,
-    borderRadius: 10,
-    elevation: 3,
-  },
-  iconContainer: {
-    marginRight: 15,
     justifyContent: 'center',
+    elevation: 4,
+    margin: width * 0.015,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
   },
-  textContainer: {
-    justifyContent: 'center',
+  iconWrapper: {
+    marginBottom: 6,
+  },
+  textWrapper: {
+    alignItems: 'center',
   },
   value: {
-    fontSize: 22,
-    color: '#fff',
-    justifyContent: 'center',
+    fontSize: 20,
     fontWeight: 'bold',
+    color: '#fff',
   },
   label: {
-    fontSize: 14,
-    color: '#fff',
+    fontSize: 13,
+    color: '#f0f0f0',
+    marginTop: 2,
   },
 });
 
