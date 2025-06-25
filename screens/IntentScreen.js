@@ -237,6 +237,7 @@ export default function IntentScreen() {
       fetchSchools();
       fetchIntents();
       holidayMaster();
+      setTab('All');
     }, [])
   );
 
@@ -358,7 +359,7 @@ export default function IntentScreen() {
                       locale="en"
                       mode="single"
                       visible
-                      date={formData.intentfor}
+                      date={new Date(formData.intentfor)}
                       onDismiss={() => setShowDatePicker(false)}
                       onConfirm={({ date }) => {
                         const correctedDate = set(date, { hours: 0, minutes: 0, seconds: 0, milliseconds: 0 }); // Avoids time zone cutoff
