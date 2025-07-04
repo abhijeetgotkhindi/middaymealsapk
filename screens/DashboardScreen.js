@@ -50,6 +50,11 @@ export default function DashboardScreen() {
     const today = new Date();
     const [modalVisible, setModalVisible] = useState(false);
 
+    // const handleSchool = (val) => {
+    //     const filteredSelectedSchools = school
+    //         .filter(item => selectedSchool.includes(item.oid) && item.oid !== 'all');
+    //     console.log(filteredSelectedSchools);
+    // }
     // Get date 30 days ago
     const pastDate = new Date();
     //   console.log(pastDate+'  start')
@@ -80,7 +85,7 @@ export default function DashboardScreen() {
                 startdate: format(range.startDate, 'dd-MM-yyyy'),//10-06-2025
                 enddate: format(range.endDate, 'dd-MM-yyyy'),
                 ngo: user.ngo,
-                school: selectedSchool.length > 0 ? selectedSchool : user.school,
+                school: selectedSchool.length > 0 ? selectedSchool.join(',') : user.school,
             };
             const result = await request({
                 method: 'POST',
@@ -91,9 +96,10 @@ export default function DashboardScreen() {
                 setDashboardValues(result.dashboardValues[0]);
             }
         } catch (error) {
-            if (!error.status)
+            if (error?.response?.status === 401) {
+                // Unauthorized — session expired
                 logout();
-            // console.error('Dashboard error:', error.response?.data || error.message);
+            }
         }
     }, [user, range, selectedSchool]);
 
@@ -110,7 +116,8 @@ export default function DashboardScreen() {
                     oid: item.oid.toString(),
                     name: item.schoolname,
                 }));
-                setschool(filteredData);
+                const withSelectAll = [{ oid: user.school, name: 'All' }, ...filteredData];
+                setschool(withSelectAll);
             }
         } catch (error) {
             if (!error.status)
@@ -124,7 +131,6 @@ export default function DashboardScreen() {
             if (user?.school && user?.ngocode) {
                 getSchool();
                 getDashboard();
-                // setSelectedSchool([]);
             }
         }, [getSchool, getDashboard])
     );
@@ -141,15 +147,46 @@ export default function DashboardScreen() {
         'Delivered': 'truck',
         'Received': 'check-circle',
     };
+
+    const setToday = () => {
+        const today = new Date();
+        setRange({ startDate: today, endDate: today });
+    };
+
+    const setYesterday = () => {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        setRange({ startDate: yesterday, endDate: yesterday });
+    };
+
+    const setTomorrow = () => {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        setRange({ startDate: tomorrow, endDate: tomorrow });
+    };
+
+
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
             <Header pageTitle="Dashboard" />
             <View style={styles.headerContainer}>
                 <TouchableOpacity onPress={() => (setSelectedSchool([]), setModalVisible(true))} style={styles.filterChip}>
-                    <Icon name="calendar" size={18} color="#4F8EF7" style={{ marginRight: 8 }} />
-                    <Text style={styles.chipText}>
-                        {format(range.startDate, 'dd-MMM-yyyy')} to {format(range.endDate, 'dd-MMM-yyyy')}
-                    </Text>
+                    <View style={{ flexDirection: 'column' }}>
+                        <Text style={styles.chipText}>
+                            <Icon name="calendar" size={18} color="#4F8EF7" style={{ marginRight: 8 }} />
+                            {'  '}
+                            {format(range.startDate, 'dd-MMM-yyyy')} to {format(range.endDate, 'dd-MMM-yyyy')}
+                        </Text>
+                        <Text style={styles.selectedSchoolText}>
+                            School(s): {selectedSchool.length === 0 || selectedSchool.length === school.length - 1
+                                ? 'All Schools'
+                                : school
+                                    .filter(s => selectedSchool.includes(s.oid))
+                                    .map(s => s.name)
+                                    .join(', ')
+                            }
+                        </Text>
+                    </View>
                 </TouchableOpacity>
             </View>
             <View style={styles.filterBar}>
@@ -187,15 +224,47 @@ export default function DashboardScreen() {
                                         icon="calendar"
                                         mode="outlined"
                                         onPress={() => setOpen(true)}
-                                        style={{ flex: 1, marginRight: 10 }}
+                                        style={{ flex: 1, marginRight: 10, color: '#555', marginBottom: 10 }}
                                         contentStyle={{ flexDirection: 'row-reverse' }}
-                                        labelStyle={{ fontSize: 14 }}
+                                        labelStyle={{ fontSize: 14, color: '#555', }}
                                     >
-                                        Select Date Range
+                                        <NText style={styles.dateRangeText}>
+                                            {range.startDate && range.endDate ? (
+                                                <Text>{range.startDate ? format(range.startDate, 'dd-MMM-yyyy') : 'Start'} - {range.endDate ? format(range.endDate, 'dd-MMM-yyyy') : 'End'}</Text>
+                                            ) : (
+                                                <Text>Select Date</Text>
+                                            )}
+                                        </NText>
                                     </NButton>
-                                    <NText style={styles.dateRangeText}>
-                                        {range.startDate ? format(range.startDate, 'dd-MMM-yyyy') : 'Start'} - {range.endDate ? format(range.endDate, 'dd-MMM-yyyy') : 'End'}
-                                    </NText>
+
+                                </View>
+                                <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 10, }} >
+                                    <NButton style={styles.dateButton}
+                                        mode="outlined"
+                                        onPress={setYesterday}
+                                        labelStyle={{ fontSize: 12 }}
+                                        compact
+                                    >
+                                        Yesterday
+                                    </NButton>
+
+                                    <NButton style={styles.dateButton}
+                                        mode="outlined"
+                                        onPress={setToday}
+                                        labelStyle={{ fontSize: 12 }}
+                                        compact
+                                    >
+                                        Today
+                                    </NButton>
+
+                                    <NButton style={styles.dateButton}
+                                        mode="outlined"
+                                        onPress={setTomorrow}
+                                        labelStyle={{ fontSize: 12 }}
+                                        compact
+                                    >
+                                        Tomorrow
+                                    </NButton>
                                 </View>
 
                                 <DatePickerModal
@@ -289,6 +358,21 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
+    dateButton: {
+        width: '30%',
+        marginVertical: 4,
+    },
+    selectedSchoolContainer: {
+        alignItems: 'center',
+        marginBottom: 10,
+        marginHorizontal: 20,
+    },
+    selectedSchoolText: {
+        fontSize: 14,
+        color: '#444',
+        textAlign: 'center',
+        fontStyle: 'italic',
+    },
     dashboardBox: {
         width: width * 0.28,
         margin: 8,

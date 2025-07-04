@@ -167,6 +167,7 @@ export default function IntentScreen() {
   };
 
   const openEditModal = (item, viewOnly = false) => {
+    const fullIntent = intentList.find(intent => intent.oid == item.oid).createdDate;
     setFormData({
       oid: item.oid?.toString() || '0',
       intentfor: new Date(parse(item.intentfor, 'EEE dd-MM-yyyy', new Date())),
@@ -179,6 +180,7 @@ export default function IntentScreen() {
       shengachikki: item.shengachikki?.toString() || '0',
       banana: item.banana?.toString() || '0',
       total: item.total?.toString() || '0',
+      createdDate: fullIntent
     }); // or item.schoolname, depending on your Dropdown structure
     const selected = school.find(s => s.oid == item.school);
     setSelectedSchool(selected.oid || null);
@@ -341,14 +343,24 @@ export default function IntentScreen() {
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Basic Information</Text>
                   {isViewMode ? (
-                    <TextInput
-                      key='Intent For'
-                      label='Intent For'
-                      value={format(formData.intentfor, 'dd-MM-yyyy')}
-                      style={[styles.input, { marginBottom: 0 }]}
-                      mode="outlined"
-                      editable={!isViewMode} // 🔒 Freeze if true
-                    />
+                    <>
+                      <TextInput
+                        key="Intent Created/Updated Date"
+                        label="Intent Created/Updated Date"
+                        value={format(new Date(formData.createdDate), 'dd-MM-yyyy')}
+                        style={[styles.input, { marginBottom: 10 }]}
+                        mode="outlined"
+                        editable={false}
+                      />
+                      <TextInput
+                        key='Intent For'
+                        label='Intent For'
+                        value={format(formData.intentfor, 'dd-MM-yyyy')}
+                        style={[styles.input, { marginBottom: 0 }]}
+                        mode="outlined"
+                        editable={!isViewMode} // 🔒 Freeze if true
+                      />
+                    </>
                   ) : (
                     <Button mode="outlined" onPress={() => setShowDatePicker(true)}>
                       {format(formData.intentfor, 'dd-MM-yyyy')}
