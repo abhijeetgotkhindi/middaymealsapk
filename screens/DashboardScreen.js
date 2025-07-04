@@ -1,4 +1,4 @@
-import React, { useContext, useState, useCallback } from 'react';
+import React, { useContext, useState, useCallback, useEffect } from 'react';
 import {
     View,
     Text,
@@ -126,14 +126,21 @@ export default function DashboardScreen() {
         }
     }, [user.school]);
 
-    useFocusEffect(
-        useCallback(() => {
-            if (user?.school && user?.ngocode) {
-                getSchool();
-                getDashboard();
-            }
-        }, [getSchool, getDashboard])
-    );
+    // useFocusEffect(
+    //     useCallback(() => {
+    //         if (user?.school && user?.ngocode) {
+    //             getSchool();
+    //             getDashboard();
+    //         }
+    //     }, [getSchool, getDashboard])
+    // );
+
+    useEffect(() => {
+        if (user?.school && user?.ngocode) {
+            getSchool();
+            getDashboard();
+        }
+    }, [user]);
 
     const labelIconMap = {
         'No Of Meals': 'cutlery',
