@@ -21,7 +21,12 @@ export default function Header({ pageTitle }) {
       </Appbar.Header>
 
       <View style={styles.pageTitleSection}>
-        <Text style={styles.pageTitleText}>{pageTitle ?? ''}</Text>
+        <View style={styles.pageTitleInner}>
+          {/* Optional icon beside title */}
+          {/* <Icon name="dashboard" size={20} color="#4F8EF7" style={{ marginRight: 8 }} /> */}
+
+          <Text style={styles.pageTitleText}>{pageTitle}</Text>
+        </View>
       </View>
     </>
   );
@@ -55,16 +60,29 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   pageTitleSection: {
+    backgroundColor: '#f8fafd',
+    paddingVertical: 12,
     paddingHorizontal: 20,
-    paddingVertical: 10,
-    backgroundColor: '#f0f2f5',
     borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
+    borderBottomColor: '#e0e0e0',
+    elevation: 2,//Platform.OS === 'android' ? 2 : 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
   },
+
+  pageTitleInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
   pageTitleText: {
-    fontSize: 18,
-    fontWeight: '600',
+    textAlign: "center",
+    fontSize: 20,
+    fontWeight: '700',
     color: '#333',
-    textAlign: 'center',
   },
 });

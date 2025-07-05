@@ -50,11 +50,6 @@ export default function DashboardScreen() {
     const today = new Date();
     const [modalVisible, setModalVisible] = useState(false);
 
-    // const handleSchool = (val) => {
-    //     const filteredSelectedSchools = school
-    //         .filter(item => selectedSchool.includes(item.oid) && item.oid !== 'all');
-    //     console.log(filteredSelectedSchools);
-    // }
     // Get date 30 days ago
     const pastDate = new Date();
     //   console.log(pastDate+'  start')
@@ -155,21 +150,10 @@ export default function DashboardScreen() {
         'Received': 'check-circle',
     };
 
-    const setToday = () => {
-        const today = new Date();
-        setRange({ startDate: today, endDate: today });
-    };
-
-    const setYesterday = () => {
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        setRange({ startDate: yesterday, endDate: yesterday });
-    };
-
-    const setTomorrow = () => {
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        setRange({ startDate: tomorrow, endDate: tomorrow });
+    const setQuickDate = (offsetDays = 0) => {
+        const date = new Date();
+        date.setDate(date.getDate() + offsetDays);
+        setRange({ startDate: date, endDate: date });
     };
 
 
@@ -177,7 +161,7 @@ export default function DashboardScreen() {
         <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
             <Header pageTitle="Dashboard" />
             <View style={styles.headerContainer}>
-                <TouchableOpacity onPress={() => (setSelectedSchool([]), setModalVisible(true))} style={styles.filterChip}>
+                <TouchableOpacity onPress={() => (setSelectedSchool(selectedSchool), setModalVisible(true))} style={styles.filterChip}>
                     <View style={{ flexDirection: 'column' }}>
                         <Text style={styles.chipText}>
                             <Icon name="calendar" size={18} color="#4F8EF7" style={{ marginRight: 8 }} />
@@ -245,34 +229,36 @@ export default function DashboardScreen() {
                                     </NButton>
 
                                 </View>
-                                <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 10, }} >
-                                    <NButton style={styles.dateButton}
+                                <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 10 }}>
+                                    <NButton
+                                        style={styles.dateButton}
                                         mode="outlined"
-                                        onPress={setYesterday}
+                                        onPress={() => setQuickDate(-1)}
                                         labelStyle={{ fontSize: 12 }}
                                         compact
                                     >
                                         Yesterday
                                     </NButton>
-
-                                    <NButton style={styles.dateButton}
+                                    <NButton
+                                        style={styles.dateButton}
                                         mode="outlined"
-                                        onPress={setToday}
+                                        onPress={() => setQuickDate(0)}
                                         labelStyle={{ fontSize: 12 }}
                                         compact
                                     >
                                         Today
                                     </NButton>
-
-                                    <NButton style={styles.dateButton}
+                                    <NButton
+                                        style={styles.dateButton}
                                         mode="outlined"
-                                        onPress={setTomorrow}
+                                        onPress={() => setQuickDate(1)}
                                         labelStyle={{ fontSize: 12 }}
                                         compact
                                     >
                                         Tomorrow
                                     </NButton>
                                 </View>
+
 
                                 <DatePickerModal
                                     locale="en"
