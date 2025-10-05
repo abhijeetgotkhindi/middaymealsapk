@@ -1,13 +1,15 @@
 import React, { useState, useCallback, useContext, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, SafeAreaView, ScrollView,
+  View, Text, StyleSheet, ScrollView,
   KeyboardAvoidingView, Platform, FlatList, RefreshControl, TouchableOpacity
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   FAB, Portal, Modal, Provider as PaperProvider, DefaultTheme,
   Button, TextInput, Checkbox, Snackbar, Card, Divider, IconButton
 } from 'react-native-paper';
-import { MaterialCommunityIcons } from '@expo/vector-icons'; // Or use `react-native-vector-icons`
+// import { MaterialCommunityIcons } from '@expo/vector-icons'; // Or use `react-native-vector-icons`
+import { FontAwesome } from '@expo/vector-icons';
 
 import { DatePickerModal, registerTranslation } from 'react-native-paper-dates';
 import { Dropdown } from 'react-native-element-dropdown';
@@ -18,6 +20,23 @@ import Header from '../components/Header';
 import { AuthContext } from '../utils/AuthContext';
 import useApi from '../utils/api';
 
+// <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+// <Dropdown
+// data={school}
+// labelField="name"
+// valueField="oid"
+// placeholder="Select School"
+// value={selectedSchool}
+// onChange={item => {
+// if (!isViewMode) {
+// setSelectedSchool(item.oid);
+// handleChange('school', item.oid);
+// }
+// }}
+// style={[styles.dropdown, isViewMode && { backgroundColor: '#f0f0f0' }]}
+// disable={isViewMode}
+// />
+// </KeyboardAvoidingView>
 export default function IntentScreen() {
   registerTranslation('en', {
     save: 'Save',
@@ -57,36 +76,89 @@ export default function IntentScreen() {
   const [fabOpen, setFabOpen] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
+  const [schoolDetails, setSchoolDetails] = useState([]);
   const [school, setSchool] = useState([]);
-  const [selectedSchool, setSelectedSchool] = useState('');
+  // const [selectedSchool, setSelectedSchool] = useState('');
 
   const [holidayList, setHolidayList] = useState([]);
   const [isViewMode, setIsViewMode] = useState(false);
 
-
+  const [showRangePicker, setShowRangePicker] = useState(false);
+  const today = new Date();
+  const [dateRange, setDateRange] = useState({
+    startDate: today,
+    endDate: today,
+  });
   const [formData, setFormData] = useState({
     oid: 0,
     intentfor: new Date(),
     school: 0,
-    totalpresent: 0,
-    milk: 0,
-    rice: 0,
-    sambar: 0,
-    egg: 0,
-    shengachikki: 0,
-    banana: 0,
-    total: 0,
+    ...['g1', 'g2', 'g3', 'g4'].reduce((acc, grade) => {
+      ['totalpresent', 'hotmeals', 'milk', 'egg', 'banana'].forEach(field => {
+        acc[`${grade}${field}`] = '0';
+      });
+      return acc;
+    }, {})
   });
 
-  const handleChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+
+  const handleChange = (key, field, value) => {
+    // Update value first
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Perform validation only onBlur
+    const validateField = () => {
+      const totalReg = Number(formData[key + 'totalreg'] || 0);
+      const totalPresent = Number(formData[key + 'totalpresent'] || 0);
+      const hotmeals = Number(formData[key + 'hotmeals'] || 0);
+      const milk = Number(formData[key + 'milk'] || 0);
+      const egg = Number(formData[key + 'egg'] || 0);
+      const banana = Number(formData[key + 'banana'] || 0);
+
+      switch (field) {
+        case key + 'totalpresent':
+          if (Number(value) > totalReg) {
+            setFormData(prev => ({ ...prev, [field]: '' }));
+            alert('Total Present should be less than or equal to Total Reg');
+          }
+          break;
+        case key + 'hotmeals':
+          if (Number(value) > totalPresent) {
+            setFormData(prev => ({ ...prev, [field]: '' }));
+            alert('Hot Meals should be less than or equal to Total Present');
+          }
+          break;
+        case key + 'milk':
+          if (Number(value) > totalPresent) {
+            setFormData(prev => ({ ...prev, [field]: '' }));
+            alert('Milk should be less than or equal to Total Present');
+          }
+          break;
+        case key + 'egg':
+          if (Number(value) + banana > totalPresent) {
+            setFormData(prev => ({ ...prev, [field]: '' }));
+            alert('Egg + Banana should be less than or equal to Total Present');
+          }
+          break;
+        case key + 'banana':
+          if (Number(value) + egg > totalPresent) {
+            setFormData(prev => ({ ...prev, [field]: '' }));
+            alert('Egg + Banana should be less than or equal to Total Present');
+          }
+          break;
+        default:
+          break;
+      }
+    };
+    return validateField;
   };
 
   const fetchSchools = useCallback(async () => {
     try {
       const result = await request({ method: 'GET', url: `/school/${user.school}` });
       if (result.success) {
-        setSchool(result.schools.map(item => ({
+        const schoolDetails = result.schools;
+        setSchoolDetails(schoolDetails);
+        setSchool(schoolDetails.map(item => ({
           oid: item.oid.toString(),
           name: item.schoolname,
         })));
@@ -116,21 +188,23 @@ export default function IntentScreen() {
 
 
   const checkDate = (date) => {
-    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+    const isWeekend = date.getDay() === 0;// || date.getDay() === 6;
     const isHoliday = holidayList.some(holiday => isSameDay(holiday, date));
     if (isWeekend || isHoliday) {
       // setSnackbar({ visible: true, msg: 'Invalid date: Holiday or Weekend' });
-      alert('Invalid date: Holiday or Weekend');
+      alert('Invalid date: Holiday or Sunday/Weekend');
       return;
     }
-    handleChange('intentfor', format(date, 'yyyy-MM-dd'));
+    handleChange('', 'intentfor', format(date, 'yyyy-MM-dd'));
     setShowDatePicker(false);
   }
 
-  const fetchIntents = useCallback(async () => {
+  const fetchIntents = useCallback(async (startDate = format(dateRange.startDate, "dd-MM-yyyy"), endDate = format(dateRange.endDate, "dd-MM-yyyy")) => {
     setRefreshing(true);
     try {
-      const result = await request({ method: 'GET', url: `/intent/${user.ngocode}` });
+      const fromDate = format(startDate, "dd-MM-yyyy");
+      const toDate = format(endDate, "dd-MM-yyyy");
+      const result = await request({ method: 'GET', url: `/intent/${user.ngocode}/${user.school}/${fromDate} : ${toDate}` });
       if (result.success) {
         const list = result.intent;
         setIntentList(list);
@@ -140,6 +214,7 @@ export default function IntentScreen() {
         setSelected(selectedMap);
       }
     } catch (error) {
+      console.log(error);
       !error.status ? logout() : console.error(error.message);
     }
     setRefreshing(false);
@@ -168,22 +243,30 @@ export default function IntentScreen() {
 
   const openEditModal = (item, viewOnly = false) => {
     const fullIntent = intentList.find(intent => intent.oid == item.oid).createdDate;
+
+    const grades = ['g1', 'g2', 'g3', 'g4'];
+    const fields = ['totalreg', 'totalpresent', 'hotmeals', 'milk', 'egg', 'banana'];
+
+    const dynamicFormData = {};
+
+    grades.forEach(grade => {
+      fields.forEach(field => {
+        const key = `${grade}${field}`;
+        dynamicFormData[key] = item[key]?.toString() || '0';
+      });
+    });
+
     setFormData({
       oid: item.oid?.toString() || '0',
       intentfor: new Date(parse(item.intentfor, 'EEE dd-MM-yyyy', new Date())),
       school: item.school?.toString() || '0',
-      totalpresent: item.totalpresent?.toString() || '0',
-      milk: item.milk?.toString() || '0',
-      rice: item.rice?.toString() || '0',
-      sambar: item.sambar?.toString() || '0',
-      egg: item.egg?.toString() || '0',
-      shengachikki: item.shengachikki?.toString() || '0',
-      banana: item.banana?.toString() || '0',
-      total: item.total?.toString() || '0',
-      createdDate: fullIntent
-    }); // or item.schoolname, depending on your Dropdown structure
+      createdDate: fullIntent,
+      ...dynamicFormData
+    });
+    // or item.schoolname, depending on your Dropdown structure
     const selected = school.find(s => s.oid == item.school);
-    setSelectedSchool(selected.oid || null);
+
+    // setSelectedSchool(selected.oid || null);
     setIsViewMode(viewOnly); // <- Freeze form
     setModalVisible(true);
   };
@@ -205,8 +288,8 @@ export default function IntentScreen() {
         ) : null}
         <TouchableOpacity style={{ flex: 1 }}>
           <Text style={styles.itemTitle}>{item.schoolname}</Text>
-          <Text style={styles.itemSubtitle}><MaterialCommunityIcons name="calendar" size={14} /> {item.intentfor}</Text>
-          <Text style={[styles.statusText, { color: getStatusColor(item.istatus) }]}><MaterialCommunityIcons name="information" size={14} /> Status: {item.istatus}</Text>
+          <Text style={styles.itemSubtitle}><FontAwesome name="calendar" size={14} /> {item.intentfor}</Text>
+          <Text style={[styles.statusText, { color: getStatusColor(item.istatus) }]}><FontAwesome name="info" size={14} /> Status: {item.istatus}</Text>
         </TouchableOpacity>
         {(tab === 'Created' && user.usergroup === 2) || (tab === 'Created' && user.usergroup === 3) ? (
           <IconButton icon="pencil" size={20} onPress={() => openEditModal(item)} />
@@ -228,7 +311,7 @@ export default function IntentScreen() {
         body: { oid: selectedIDs.join(','), createdby: user.oid, istatus: status }
       });
       setSnackbar({ visible: true, msg: 'Status updated successfully' });
-      fetchIntents();
+      fetchIntents(dateRange.startDate, dateRange.endDate);
     } catch (err) {
       setSnackbar({ visible: true, msg: 'Update failed' });
     }
@@ -244,32 +327,65 @@ export default function IntentScreen() {
   );
 
   React.useEffect(() => {
-    const fields = ['oid', 'milk', 'rice', 'sambar', 'egg', 'shengachikki', 'banana'];
-    const sum = fields.reduce((acc, field) => acc + (parseInt(formData[field]) || 0), 0);
-    setFormData(prev => ({ ...prev, total: sum.toString() }));
-  }, [formData.oid, formData.milk, formData.rice, formData.sambar, formData.egg, formData.shengachikki, formData.banana]);
+    const grades = ['g1', 'g2', 'g3', 'g4'];
+    const fields = ['hotmeals', 'milk', 'egg', 'banana'];
+    let sum = 0;
+    grades.forEach(grade => {
+      fields.forEach(field => {
+        const key = `${grade}${field}`;
+        sum += parseInt(formData[key]) || 0;
+      });
+    });
+    setFormData(prev => ({ ...prev }));
+  }, [
+    formData.g1hotmeals, formData.g1milk, formData.g1egg, formData.g1banana,
+    formData.g2hotmeals, formData.g2milk, formData.g2egg, formData.g2banana,
+    formData.g3hotmeals, formData.g3milk, formData.g3egg, formData.g3banana,
+    formData.g4hotmeals, formData.g4milk, formData.g4egg, formData.g4banana,
+  ]);
+
 
   const validateFormData = () => {
-    const requiredFields = ['intentfor', 'school', 'totalpresent', 'milk', 'rice', 'sambar', 'egg', 'shengachikki', 'banana'];
-    for (let field of requiredFields) {
+    const requiredTopFields = ['intentfor', 'school'];
+    const grades = [
+      { key: 'g2', label: '1st - 5th Std' },
+      { key: 'g3', label: '6th & 7th Std' },
+      { key: 'g4', label: '8th - 10th Std' },
+      { key: 'g1', label: 'LKG & UKG' },
+    ];
+    const requiredFields = [{ field: 'totalreg', fieldName: 'Total Reg' }, { field: 'totalpresent', fieldName: 'Total Present' }, { field: 'hotmeals', fieldName: 'Hot Meals' }, { field: 'milk', fieldName: 'Milk' }, { field: 'egg', fieldName: 'Egg' }, { field: 'banana', fieldName: 'Banana' }];
+
+    // Check top-level required fields
+    for (let field of requiredTopFields) {
       if (!formData[field] || formData[field].toString().trim() === '') {
         setSnackbar({ visible: true, msg: `${field} is required` });
         return false;
       }
     }
 
-    if (!selectedSchool) {
-      setSnackbar({ visible: true, msg: `School selection is required` });
-      return false;
+    // Check grade-wise required fields
+    for (let grade of grades) {
+      for (let field of requiredFields) {
+        const key = `${grade.key}${field.field}`;
+        if (!formData[key] || formData[key].toString().trim() === '') {
+          setSnackbar({ visible: true, msg: `Field ${field.fieldName} is required for ${grade.label.toUpperCase()}` });
+          return false;
+        }
+      }
     }
+
+    // if (!selectedSchool) {
+    // setSnackbar({ visible: true, msg: `School selection is required` });
+    // return false;
+    // }
 
     return true;
   };
 
+
   const handleSubmit = async (status) => {
     if (!validateFormData()) return;
-    const payload = { ...formData, intentfor: format(formData.intentfor, 'yyyy-MM-dd'), school: selectedSchool, istatus: status, createdby: user.oid };
-    // alert(`/intent/${user.ngocode}/`+(formData.oid == 0 ? 'addnew' : 'update'));
+    const payload = { ...formData, intentfor: format(formData.intentfor, 'yyyy-MM-dd'), school: user.school, istatus: status, createdby: user.oid };
     try {
       await request({
         method: (formData.oid == 0 ? 'POST' : 'PUT'),
@@ -289,7 +405,7 @@ export default function IntentScreen() {
     nextDate.setDate(nextDate.getDate() + 1); // Start from tomorrow
     while (
       nextDate.getDay() === 0 || // Sunday
-      nextDate.getDay() === 6 || // Saturday
+      // nextDate.getDay() === 6 || // Saturday
       holidayList.some(holiday => isSameDay(holiday, nextDate))
     ) {
       nextDate.setDate(nextDate.getDate() + 1);
@@ -303,23 +419,64 @@ export default function IntentScreen() {
     setFabOpen(false);
   };
 
-  const handleModalOpen = () => {
-    setIsViewMode(false); // <- Freeze form
-    setModalVisible(true);
+  const resetFormData = () => {
+    const grades = ['g1', 'g2', 'g3', 'g4'];
+    const fields = ['totalpresent', 'hotmeals', 'milk', 'egg', 'banana'];
+
+    const gradeFields = grades.reduce((acc, grade) => {
+      fields.forEach(field => {
+        acc[`${grade}${field}`] = '0';
+      });
+
+      switch (grade) {
+        case 'g2':
+          acc[`${grade}totalreg`] = `${(schoolDetails[0]?.['1std'] || 0) +
+            (schoolDetails[0]?.['2std'] || 0) +
+            (schoolDetails[0]?.['3std'] || 0) +
+            (schoolDetails[0]?.['4std'] || 0) +
+            (schoolDetails[0]?.['5std'] || 0)
+            }`;
+          break;
+
+        case 'g3':
+          acc[`${grade}totalreg`] = `${(schoolDetails[0]?.['6std'] || 0) +
+            (schoolDetails[0]?.['7std'] || 0)
+            }`;
+          break;
+
+        case 'g4':
+          acc[`${grade}totalreg`] = `${(schoolDetails[0]?.['8std'] || 0) +
+            (schoolDetails[0]?.['9std'] || 0) +
+            (schoolDetails[0]?.['10std'] || 0)
+            }`;
+          break;
+
+        case 'g1':
+          acc[`${grade}totalreg`] = `${(schoolDetails[0]?.['lkg'] || 0) +
+            (schoolDetails[0]?.['ukg'] || 0)
+            }`;
+          break;
+
+        default:
+          acc[`${grade}totalreg`] = `0`;
+      }
+      return acc;
+    }, {});
+
     setFormData({
       oid: '0',
       intentfor: getNextValidDate(),
       school: '',
-      totalpresent: '',
-      milk: '',
-      rice: '',
-      sambar: '',
-      egg: '',
-      shengachikki: '',
-      banana: '',
-      total: '',
+      ...gradeFields,
     });
-    setSelectedSchool('');
+  };
+
+
+  const handleModalOpen = () => {
+    setIsViewMode(false); // <- Freeze form
+    setModalVisible(true);
+    resetFormData();
+    // setSelectedSchool('');
 
   };
   return (
@@ -380,41 +537,48 @@ export default function IntentScreen() {
                       editable={!isViewMode} // 🔒 Freeze if true
                     />
                   )}
-                  <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-                    <Dropdown
-                      data={school}
-                      labelField="name"
-                      valueField="oid"
-                      placeholder="Select School"
-                      value={selectedSchool}
-                      onChange={item => {
-                        if (!isViewMode) {
-                          setSelectedSchool(item.oid);
-                          handleChange('school', item.oid);
-                        }
-                      }}
-                      style={[styles.dropdown, isViewMode && { backgroundColor: '#f0f0f0' }]}
-                      disable={isViewMode}
-                    />
-                  </KeyboardAvoidingView>
                 </View>
-
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Meal Details</Text>
-                  {['totalpresent', 'milk', 'rice', 'sambar', 'egg', 'shengachikki', 'banana'].map(field => (
-                    <TextInput
-                      key={field}
-                      label={field}
-                      value={formData[field]}
-                      onChangeText={text => handleChange(field, text)}
-                      keyboardType="numeric"
-                      style={styles.input}
-                      mode="outlined"
-                      editable={!isViewMode} // 🔒 Freeze if true
-                    />
+                  {[
+                    { key: 'g2', label: '1st - 5th Std' },
+                    { key: 'g3', label: '6th & 7th Std' },
+                    { key: 'g4', label: '8th - 10th Std' },
+                    { key: 'g1', label: 'LKG & UKG' },
+                  ].map(({ key, label }) => (
+                    <View key={key} style={styles.section}>
+                      <View style={styles.gradeSection}>
+                        <Text style={styles.gradeTitle}>{label}</Text>
+                        {[{ field: 'totalreg', fieldName: 'Total Reg' }, { field: 'totalpresent', fieldName: 'Total Present' }, { field: 'hotmeals', fieldName: 'Hot Meals' }, { field: 'milk', fieldName: 'Milk' }, { field: 'egg', fieldName: 'Egg' }, { field: 'banana', fieldName: 'Banana' }].map(({ field, fieldName }) => {
+                          const fullField = `${key}${field}`;
+                          return (
+                            <TextInput
+                              key={fullField}
+                              label={fieldName}
+                              value={formData[fullField]}
+                              onChangeText={text => handleChange(key, fullField, text)()}
+                              onBlur={() => handleChange(key, fullField, formData[fullField])()} // triggers validation
+                              keyboardType="numeric"
+                              style={styles.input}
+                              mode="outlined"
+                              editable={field !== 'totalreg' && !isViewMode}
+                            />
+
+                          );
+                        })}
+                      </View>
+                    </View>
                   ))}
-                  <TextInput label="Total" value={formData.total} mode="outlined" style={styles.input} editable={false} />
+
+                  {/* <TextInput
+                    label="Total"
+                    value={formData.total}
+                    mode="outlined"
+                    style={styles.input}
+                    editable={false}
+                  /> */}
                 </View>
+
 
                 {!isViewMode && (
                   <View style={styles.buttonRow}>
@@ -447,6 +611,37 @@ export default function IntentScreen() {
         </Portal>
 
         {/* Tabs */}
+        <View style={styles.tabRowFilter}>
+          {showRangePicker && (
+            <DatePickerModal
+              locale="en"
+              mode="range"
+              visible
+              startDate={dateRange.startDate}
+              endDate={dateRange.endDate}
+              onDismiss={() => setShowRangePicker(false)}
+              onConfirm={({ startDate, endDate }) => {
+                startDate = new Date(startDate)
+                endDate = new Date(endDate)
+                setDateRange({ startDate, endDate });
+                setShowRangePicker(false);
+                if (startDate && endDate) {
+                  fetchIntents(startDate, endDate);
+                }
+              }}
+            />
+          )}
+          <Button
+            mode="outlined"
+            style={{ margin: 10 }}
+            onPress={() => setShowRangePicker(true)}
+          >
+            {dateRange.startDate && dateRange.endDate
+              ? `${format(dateRange.startDate, "dd-MM-yyyy")} → ${format(dateRange.endDate, "dd-MM-yyyy")}`
+              : "Select Date Range"}
+          </Button>
+
+        </View>
         <View style={styles.tabRow}>
           {['All', 'Created', 'Delivered', 'Received'].map(tabName => (
             <Button
@@ -478,7 +673,7 @@ export default function IntentScreen() {
           data={filteredList}
           keyExtractor={(item, index) => item._id?.toString() || item.oid?.toString() || index.toString()}
           renderItem={renderItem}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchIntents} />}
+          refreshControl={<RefreshControl refreshing={refreshing}  onRefresh={() => fetchIntents(dateRange.startDate, dateRange.endDate)} />}
         />
 
         {/* Bulk Action Button */}
@@ -501,6 +696,20 @@ export default function IntentScreen() {
 }
 
 const styles = StyleSheet.create({
+  gradeSection: {
+    marginBottom: 16,
+    paddingVertical: 8,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+  },
+
+  gradeTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+    color: '#333',
+  },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -516,6 +725,15 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   section: {
+    backgroundColor: '#f9f9f9',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+
+  Mainsection: {
     backgroundColor: '#f9f9f9',
     padding: 12,
     borderRadius: 8,
@@ -556,6 +774,14 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     flexWrap: 'wrap', // Allow wrapping if screen is small
     padding: 10
+  },
+
+  tabRowFilter: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: -10,
+    marginTop: 10,
+    flexWrap: 'wrap', // Allow wrapping if screen is small
   },
 
   tabButton: {

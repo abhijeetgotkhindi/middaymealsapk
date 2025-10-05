@@ -1,36 +1,38 @@
 {
   "expo": {
-    "name": "middaymeals",
-    "slug": "middaymeals",
-    "version": "1.0.2",
+    "name": "PM Poshan",
+    "slug": "pmposhan",    
+    "platforms": ["android"],
+    "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/logo.png",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/logo.png",
+      "image": "./assets/icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "ios": {
-      "supportsTablet": true
-    },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon.png",
+        "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "middaymeals.abhijeetgotkhindi"
-    },
-    "web": {
-      "favicon": "./assets/icon.png"
+      "package": "pm.poshan"
     },
     "extra": {
       "eas": {
-        "projectId": "a1496e42-77cd-47cd-a657-f687089e9433"
+        "projectId": "7ebb7a85-ad58-448f-beae-d28cb75e2ce3"
       }
     },
-    "owner": "abhijeetgotkhindi"
+    "owner": "abhijeetgotkhindi",
+    "runtimeVersion": "1.0.0",
+    "updates": {
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/7ebb7a85-ad58-448f-beae-d28cb75e2ce3"
+    }
   }
 }

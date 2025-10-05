@@ -3,7 +3,6 @@ import {
     View,
     Text,
     StyleSheet,
-    SafeAreaView,
     Button,
     ScrollView,
     KeyboardAvoidingView,
@@ -11,6 +10,7 @@ import {
     TouchableOpacity,
     Modal,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Header from '../components/Header';
 import { AuthContext } from '../utils/AuthContext';
 import useApi from '../utils/api';
@@ -23,7 +23,8 @@ import { format } from 'date-fns';
 import { MultiSelect } from 'react-native-element-dropdown';
 import { Dimensions } from 'react-native';
 const { width } = Dimensions.get('window');
-import Icon from 'react-native-vector-icons/FontAwesome'; // or Ionicons, MaterialIcons, etc.
+// import Icon from 'react-native-vector-icons/FontAwesome'; // or Ionicons, MaterialIcons, etc.
+import { FontAwesome } from '@expo/vector-icons';
 
 export default function DashboardScreen() {
     registerTranslation('en', {
@@ -81,7 +82,7 @@ export default function DashboardScreen() {
                 enddate: format(range.endDate, 'dd-MM-yyyy'),
                 ngo: user.ngo,
                 school: selectedSchool.length > 0 ? selectedSchool.join(',') : user.school,
-            };
+            }; 
             const result = await request({
                 method: 'POST',
                 url: '/dashboard/',  // Automatically added to baseURL
@@ -155,8 +156,6 @@ export default function DashboardScreen() {
         date.setDate(date.getDate() + offsetDays);
         setRange({ startDate: date, endDate: date });
     };
-
-
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
             <Header pageTitle="Dashboard" />
@@ -164,7 +163,7 @@ export default function DashboardScreen() {
                 <TouchableOpacity onPress={() => (setSelectedSchool(selectedSchool), setModalVisible(true))} style={styles.filterChip}>
                     <View style={{ flexDirection: 'column' }}>
                         <Text style={styles.chipText}>
-                            <Icon name="calendar" size={18} color="#4F8EF7" style={{ marginRight: 8 }} />
+                            <FontAwesome name="calendar" size={18} color="#4F8EF7" style={{ marginRight: 8 }} />
                             {'  '}
                             {format(range.startDate, 'dd-MMM-yyyy')} to {format(range.endDate, 'dd-MMM-yyyy')}
                         </Text>
@@ -258,8 +257,6 @@ export default function DashboardScreen() {
                                         Tomorrow
                                     </NButton>
                                 </View>
-
-
                                 <DatePickerModal
                                     locale="en"
                                     mode="range"
@@ -273,7 +270,6 @@ export default function DashboardScreen() {
                                     }}
                                 />
                             </View>
-
                             {/* Footer */}
                             <View style={styles.modalFooter}>
                                 <Button title="Apply Filters" onPress={() => {
@@ -281,7 +277,6 @@ export default function DashboardScreen() {
                                     handleFilter();
                                 }} />
                             </View>
-
                         </View>
                     </View>
                 </Modal>
@@ -310,11 +305,9 @@ export default function DashboardScreen() {
                             </DataTable.Header>
                             {[
                                 { label: 'No Of Meals', value: dashboardvalues.nofomeals },
-                                { label: 'Rice', value: dashboardvalues.rice },
-                                { label: 'Sambar', value: dashboardvalues.sambar },
+                                { label: 'Hot Meals', value: dashboardvalues.hotmeals },
                                 { label: 'Milk', value: dashboardvalues.milk },
                                 { label: 'Egg', value: dashboardvalues.egg },
-                                { label: 'Chikki', value: dashboardvalues.shengachikki },
                                 { label: 'Banana', value: dashboardvalues.banana },
                                 { label: 'Total', value: dashboardvalues.total, highlight: true },
                                 { label: 'Delivered', value: dashboardvalues.delivered },

@@ -38,7 +38,7 @@ export default function LoginScreen() {
                             style={styles.logo}
                             resizeMode="contain"
                         />
-                        <Text style={styles.title}>MID DAY MEALS</Text>
+                        <Text style={styles.title}>PM POSHAN</Text>
 
                         {message ? (
                             <Text style={[styles.message, messageType === 'error' ? styles.error : styles.success]}>
@@ -53,6 +53,7 @@ export default function LoginScreen() {
                         onChangeText={setUsername}
                         mode="outlined"
                         style={styles.input}
+                        autoCapitalize="none"
                     />
 
                     <TextInput
@@ -62,6 +63,7 @@ export default function LoginScreen() {
                         secureTextEntry
                         mode="outlined"
                         style={styles.input}
+                        autoCapitalize="none"
                     />
 
                     <Button mode="contained" onPress={handleLogin} style={styles.button}>
@@ -83,6 +85,10 @@ const styles = StyleSheet.create({
     card: {
         padding: 10,
         borderRadius: 8,
+    },
+    logo: {
+        width: 60,
+        height: 60,
     },
     logoContainer: {
         alignItems: 'center',

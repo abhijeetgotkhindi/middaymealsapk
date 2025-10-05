@@ -26,7 +26,7 @@ export default function ProfileScreen() {
           <Card.Title title="User Info" />
           <Card.Content>
             <Text><Text style={styles.label}>Name:</Text> {user.displayname}</Text>
-            <Text><Text style={styles.label}>Email:</Text> {user.email}</Text>
+            <Text><Text style={styles.label}>Email:</Text> {user.email}</Text>  
           </Card.Content>
         </Card>
         <Divider style={{ marginVertical: 20 }} />

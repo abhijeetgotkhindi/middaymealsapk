@@ -15,7 +15,7 @@ export default function Header({ pageTitle }) {
             style={styles.logo}
             resizeMode="contain"
           />
-          {/* <Text style={styles.titleText}>Mid Day Meals</Text> */}
+          {/* <Text style={styles.titleText}>PM POSHAN</Text> */}
         </View>
         <Appbar.Action icon="logout" color="#fff" size={26} onPress={logout} />
       </Appbar.Header>
@@ -49,8 +49,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   logo: {
-    // width: 36,
-    // height: 36,
+    width: 40,
+    height: 60,
     marginLeft: 10,
     marginRight: 8,
   },
