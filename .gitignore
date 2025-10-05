@@ -8,6 +8,10 @@ node_modules
 # dependencies
 node_modules/
 
+.idea/
+.vscode/
+*.log
+
 # Expo
 .expo/
 dist/
